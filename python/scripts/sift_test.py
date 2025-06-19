@@ -8,7 +8,7 @@ metric = "Euclidian"
 
 # wp.build_vamana_index(metric, "float", DATA_DIR + NAME + "_base.fbin", DATA_DIR + "outputs/" + NAME + "_64", 64, 128, 1.15, True)
 # wp.build_vamana_index(metric, "float", DATA_DIR + NAME + "_base.fbin", DATA_DIR + "outputs/" + NAME + "_40", 40, 80, 1.15, True)
-# wp.build_vamana_index(metric, "float", DATA_DIR + NAME + "_base.fbin", DATA_DIR + "outputs/" + NAME + "_32", 32, 64, 1.15, True)
+wp.build_hnsw_index(metric, "float", DATA_DIR + NAME + "_base.fbin", DATA_DIR + "outputs/" + NAME + "_32", 32, 64, 1.15, True)
 
 Index = wp.load_index(metric, "float", DATA_DIR + NAME + "_base.fbin", DATA_DIR + "outputs/" + NAME + "_64")
 

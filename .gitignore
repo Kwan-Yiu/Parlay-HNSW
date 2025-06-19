@@ -1,0 +1,9 @@
+*.so
+*.pyc
+*.gt
+*.fvecs
+*.fbin
+*.tar.gz
+algorithms/vamana/neighbors
+data/*
+data_tools/vec_to_bin
