@@ -626,6 +626,11 @@ public:
 		}
 	}
 */
+	~HNSW() {
+		for(auto& node : node_pool) {
+			delete[] node.neighbors;
+		}
+	}
 };
 
 template<typename U, template<typename> class Allocator>
@@ -774,12 +779,13 @@ HNSW<U,Allocator>::HNSW(Iter begin, Iter end, uint32_t dim_, float m_l_, uint32_
 	};
 	entrance.push_back(entrance_init);
 
-	uint32_t batch_begin=0, batch_end=1, size_limit=n*0.02;
+	uint32_t batch_begin=0, batch_end=1, size_limit=n*0.0002, batch_size=0;
 	float progress = 0.0;
 	while(batch_end<n)
 	{
 		batch_begin = batch_end;
 		batch_end = std::min({n, (uint32_t)std::ceil(batch_begin*batch_base)+1, batch_begin+size_limit});
+		batch_size = batch_end - batch_begin;
 		/*
 		if(batch_end>batch_begin+100)
 			batch_end = batch_begin+100;
@@ -792,7 +798,7 @@ HNSW<U,Allocator>::HNSW(Iter begin, Iter end, uint32_t dim_, float m_l_, uint32_
 		if(batch_end>n*(progress+0.05))
 		{
 			progress = float(batch_end)/n;
-			fprintf(stderr, "Built: %3.2f%%\n", progress*100);
+			fprintf(stderr, "Built: %3.2f%%, batch_size: %u\n", progress*100, batch_size);
 			// fprintf(stderr, "# visited: %lu\n", parlay::reduce(total_visited,parlay::addm<size_t>{}));
 			// fprintf(stderr, "# eval: %lu\n", parlay::reduce(total_eval,parlay::addm<size_t>{}));
 			// fprintf(stderr, "size of C: %lu\n", parlay::reduce(total_size_C,parlay::addm<size_t>{}));

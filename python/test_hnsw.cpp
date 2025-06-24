@@ -6,10 +6,10 @@
 
 int main() {
     std::string metric = "Euclidian";
-    std::string data_path = "../data/sift/sift_learn.fbin";
+    std::string data_path = "../data/sift/sift_base.fbin";
     std::string output_path = "../data/sift/outputs/sift_32";
     uint32_t graph_degree = 32;
-    uint32_t efc = 64;
+    uint32_t efc = 200;
     float m_l = 1.15f;
     float alpha = 1.15f;
 

@@ -237,7 +237,7 @@ void build_hnsw_index(std::string metric, std::string &vector_bin_path,
     );
     const auto dim = Points.get_dims();
     auto G = ANN::HNSW<desc>(ps.begin(), ps.end(), dim, m_l, graph_degree, efc, alpha);
-    G.save(index_output_path);
+    // G.save(index_output_path);
 }
 
 template void build_hnsw_index<float, Euclidian_Point<float>>(std::string , std::string &, std::string &, uint32_t, uint32_t,
