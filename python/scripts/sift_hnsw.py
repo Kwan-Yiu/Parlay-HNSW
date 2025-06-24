@@ -6,7 +6,8 @@ NAME = "sift"
 DATA_DIR = "../data/" + NAME + "/"
 metric = "Euclidian"
 
-wp.build_hnsw_index(metric, "float", DATA_DIR + NAME + "_base.fbin", DATA_DIR + "outputs/" + NAME + "_32", 32, 64, 1.15, True)
+index = wp.build_hnsw_index(metric, "float", DATA_DIR + NAME + "_base.fbin", DATA_DIR + "outputs/" + NAME + "_32", 32, 64, 1.15, True)
+
 
 # Index = wp.load_index(metric, "float", DATA_DIR + NAME + "_base.fbin", DATA_DIR + "outputs/" + NAME + "_64")
 
