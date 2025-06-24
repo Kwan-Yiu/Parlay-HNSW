@@ -509,7 +509,7 @@ public:
 		// asm volatile("movl %0, %%esp":"=a"(esp));
 		// static thread_local std::hash<std::thread::id> h;
 		// static thread_local std::mt19937 gen{h(std::this_thread::get_id())};
-		static thread_local std::mt19937 gen{parlay::worker_id()};
+		static thread_local std::mt19937 gen{static_cast<std::mt19937::result_type>(parlay::worker_id())};
 		static thread_local std::uniform_real_distribution<> dis(std::numeric_limits<float>::min(), 1.0);
 		const uint32_t res = uint32_t(-log(dis(gen))*m_l);
 		return res;
@@ -1128,8 +1128,8 @@ auto HNSW<U,Allocator>::search_layer_bak(const node &u, const parlay::sequence<n
 #ifdef USE_UNORDERED_SET
 	std::unordered_set<uint32_t> visited;
 #endif
-	parlay::sequence<dist> W, discarded;
-	std::set<dist,farthest> C;
+	parlay::sequence<dist_ex> W, discarded;
+	std::set<dist_ex,farthest> C;
 	std::set<node_id> w_inserted;
 	W.reserve(ef+1);
 
@@ -1147,7 +1147,7 @@ auto HNSW<U,Allocator>::search_layer_bak(const node &u, const parlay::sequence<n
 	#endif
 		cnt_visited++;
 		const auto d = U::distance(u.data,get_node(ep).data,dim);
-		C.insert({d,ep});
+		C.insert({d,ep,1});
 		W.push_back({d,ep});
 		w_inserted.insert(ep);
 	}
@@ -1238,7 +1238,7 @@ auto HNSW<U,Allocator>::search_layer_bak(const node &u, const parlay::sequence<n
 	if(ctrl.radius)
 	{
 		const auto rad = *ctrl.radius;
-		auto split = std::partition(W.begin(), W.end(), [rad](const dist &e){
+		auto split = std::partition(W.begin(), W.end(), [rad](const dist_ex &e){
 			return e.d <= rad;
 		});
 		W.resize(split-W.begin());

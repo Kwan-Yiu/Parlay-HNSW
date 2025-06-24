@@ -135,7 +135,9 @@ struct Graph{
     long cnt = n * (maxDeg + 1);
     long num_bytes = cnt * sizeof(indexType);
     indexType* ptr = (indexType*) aligned_alloc(1l << 21, num_bytes);
+#if defined(MADV_HUGEPAGE)
     madvise(ptr, num_bytes, MADV_HUGEPAGE);
+#endif
     parlay::parallel_for(0, cnt, [&] (long i) {ptr[i] = 0;});
     graph = std::shared_ptr<indexType[]>(ptr, std::free);
   }

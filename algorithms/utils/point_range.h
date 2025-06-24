@@ -57,9 +57,15 @@ struct PointRange{
     int num_bytes = p.num_bytes();
     aligned_bytes = (num_bytes <= 32) ? 32 : 64 * ((num_bytes - 1)/64 + 1);
     long total_bytes = n * aligned_bytes;
-    byte* ptr = (byte*) aligned_alloc(1l << 21, total_bytes);
-    madvise(ptr, total_bytes, MADV_HUGEPAGE);
-    values = std::shared_ptr<byte[]>(ptr, std::free);
+    void* ptr = nullptr;
+    size_t alignment = 4096;
+    if (total_bytes < alignment) alignment = 4096;
+    int res = posix_memalign(&ptr, alignment, total_bytes);
+    if (res != 0 || ptr == nullptr) {
+        fprintf(stderr, "posix_memalign failed! res=%d, total_bytes=%ld, alignment=%ld\n", res, total_bytes, alignment);
+        abort();
+    }
+    values = std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr), std::free);
     byte* vptr = values.get();
     parlay::parallel_for(0, n, [&] (long i) {
       Point::translate_point(vptr + i * aligned_bytes, pr[i], params);});
@@ -95,9 +101,15 @@ struct PointRange{
       if (aligned_bytes != num_bytes)
         std::cout << "Aligning bytes to " << aligned_bytes << std::endl;
       long total_bytes = n * aligned_bytes;
-      byte* ptr = (byte*) aligned_alloc(1l << 21, total_bytes);
-      madvise(ptr, total_bytes, MADV_HUGEPAGE);
-      values = std::shared_ptr<byte[]>(ptr, std::free);
+      void* ptr = nullptr;
+      size_t alignment = 4096;
+      if (total_bytes < alignment) alignment = 4096;
+      int res = posix_memalign(&ptr, alignment, total_bytes);
+      if (res != 0 || ptr == nullptr) {
+          fprintf(stderr, "posix_memalign failed! res=%d, total_bytes=%ld, alignment=%ld\n", res, total_bytes, alignment);
+          abort();
+      }
+      values = std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr), std::free);
       size_t BLOCK_SIZE = 1000000;
       size_t index = 0;
       while(index < n) {

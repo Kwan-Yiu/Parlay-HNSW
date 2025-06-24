@@ -71,7 +71,7 @@ filtered_beam_search(const GT &G,
 
   // The subset of the frontier that has not been visited
   // Use the first of these to pick next vertex to visit.
-  std::vector<id_dist> unvisited_frontier(beamSize);
+  std::vector<id_dist> unvisited_frontier(frontier.size());
   for (int i=0; i < frontier.size(); i++)
     unvisited_frontier[i] = frontier[i];
 
@@ -211,6 +211,7 @@ filtered_beam_search(const GT &G,
       frontier.push_back(new_frontier[i]);
 
     // get the unvisited frontier
+    unvisited_frontier.resize(std::min<long>(frontier.size(), QP.beamSize));
     remain = (std::set_difference(frontier.begin(),
                                   frontier.begin() + std::min<long>(frontier.size(), QP.beamSize),
                                   visited.begin(),
