@@ -309,37 +309,9 @@ struct GraphIndex {
         std::cout << "Recall: " << std::setprecision(6) << recall << std::endl;
     }
 
-    // void check_recall(std::string &graph_file, py::array_t<unsigned int,
-    // py::array::c_style | py::array::forcecast> &neighbors, int k){
-    //   groundTruth<unsigned int> GT = groundTruth<unsigned
-    //   int>(graph_file.data());
+    int batch_insert(const std::vector<T *> &batch_data,
+                     const std::vector<TagT> &batch_tags) {
 
-    //   size_t n = GT.size();
-
-    //   int numCorrect = 0;
-    //   for (unsigned int i = 0; i < n; i++) {
-    //     parlay::sequence<int> results_with_ties;
-    //     for (unsigned int l = 0; l < k; l++)
-    //       results_with_ties.push_back(GT.coordinates(i,l));
-    //     std::cout << i << std::endl;
-    //     float last_dist = GT.distances(i, k-1);
-    //     for (unsigned int l = k; l < GT.dimension(); l++) {
-    //       if (GT.distances(i,l) == last_dist) {
-    //         results_with_ties.push_back(GT.coordinates(i,l));
-    //       }
-    //     }
-    //     std::cout << "aa" << std::endl;
-    //     std::set<int> reported_nbhs;
-    //     for (unsigned int l = 0; l < k; l++)
-    //     reported_nbhs.insert(neighbors.mutable_data(i)[l]); for (unsigned int
-    //     l = 0; l < results_with_ties.size(); l++) {
-    //       if (reported_nbhs.find(results_with_ties[l]) !=
-    //       reported_nbhs.end()) {
-    //         numCorrect += 1;
-    //       }
-    //     }
-    //   }
-    //   float recall = static_cast<float>(numCorrect) / static_cast<float>(k *
-    //   n); std::cout << "Recall: " << recall << std::endl;
-    // }
+        PointRange<Point> Points(batch_data);
+    }
 };

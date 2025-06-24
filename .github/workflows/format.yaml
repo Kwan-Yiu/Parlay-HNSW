@@ -23,7 +23,7 @@ jobs:
 
     # Format C++ files with clang-format
     - name: Run clang-format
-      run: find . -type f \( -name "*.cpp" -o -name "*.hpp" \) | xargs clang-format -i
+      run: find . -type f \( -name "*.cpp" -o -name "*.h" \) | xargs clang-format -i
 
     # Check for modified files
     - name: Check for modified files
