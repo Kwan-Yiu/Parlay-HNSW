@@ -84,7 +84,8 @@ struct PointRange {
     PointRange(PR& pr, int dims)
         : PointRange(pr, Point::generate_parameters(dims)) {}
 
-    PointRange(const std::vector<float*>& batch_data, int d) : params(parameters(d)) {
+    PointRange(const std::vector<float*>& batch_data, int d)
+        : params(parameters(d)) {
         n = batch_data.size();
         if (n == 0) {
             values = std::shared_ptr<byte[]>(nullptr, std::free);
@@ -111,7 +112,7 @@ struct PointRange {
         byte* vptr = values.get();
         for (long i = 0; i < n; i++) {
             Point::translate_point(vptr + i * aligned_bytes, batch_data[i],
-                                 params);
+                                   params);
         }
     }
 
