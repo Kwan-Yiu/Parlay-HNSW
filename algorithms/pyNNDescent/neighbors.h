@@ -21,43 +21,47 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <algorithm>
+
+#include "../utils/NSGDist.h"
+#include "../utils/beamSearch.h"
+#include "../utils/check_nn_recall.h"
+#include "../utils/parse_results.h"
+#include "../utils/stats.h"
+#include "../utils/types.h"
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 #include "parlay/random.h"
-#include "../utils/NSGDist.h"  
-#include "../utils/types.h"
 #include "pynn_index.h"
-#include "../utils/beamSearch.h"  
-#include "../utils/stats.h"
-#include "../utils/parse_results.h"
-#include "../utils/check_nn_recall.h"
 
 namespace parlayANN {
 
-template<typename Point, typename PointRange, typename indexType>
-void ANN(Graph<indexType> &G, long k, BuildParams &BP,
-         PointRange &Query_Points,
-         groundTruth<indexType> GT, char *res_file,
-         bool graph_built, PointRange &Points) {
-  parlay::internal::timer t("ANN"); 
-  {
-    using findex = pyNN_index<Point, PointRange, indexType>;
-    double idx_time;
-    long K = BP.R;
-    if(!graph_built){
-      findex I(K, BP.delta);
-      I.build_index(G, Points, BP.cluster_size, BP.num_clusters, BP.alpha);
-      idx_time = t.next_time();
-    }else {idx_time=0;}
+template <typename Point, typename PointRange, typename indexType>
+void ANN(Graph<indexType> &G, long k, BuildParams &BP, PointRange &Query_Points,
+         groundTruth<indexType> GT, char *res_file, bool graph_built,
+         PointRange &Points) {
+    parlay::internal::timer t("ANN");
+    {
+        using findex = pyNN_index<Point, PointRange, indexType>;
+        double idx_time;
+        long K = BP.R;
+        if (!graph_built) {
+            findex I(K, BP.delta);
+            I.build_index(G, Points, BP.cluster_size, BP.num_clusters,
+                          BP.alpha);
+            idx_time = t.next_time();
+        } else {
+            idx_time = 0;
+        }
 
-    std::string name = "pyNNDescent";
-    std::string params = "K = " + std::to_string(K);
-    auto [avg_deg, max_deg] = graph_stats_(G);
-    Graph_ G_(name, params, G.size(), avg_deg, max_deg, idx_time);
-    G_.print();
-    if(Query_Points.size() != 0)
-      search_and_parse(G_, G, Points, Query_Points, GT, res_file, k, BP.verbose);
-  };
+        std::string name = "pyNNDescent";
+        std::string params = "K = " + std::to_string(K);
+        auto [avg_deg, max_deg] = graph_stats_(G);
+        Graph_ G_(name, params, G.size(), avg_deg, max_deg, idx_time);
+        G_.print();
+        if (Query_Points.size() != 0)
+            search_and_parse(G_, G, Points, Query_Points, GT, res_file, k,
+                             BP.verbose);
+    };
 }
 
-} // end namespace
+}  // namespace parlayANN

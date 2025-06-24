@@ -22,49 +22,46 @@
 
 #include <algorithm>
 
+#include "../../algorithms/vamana/index.h"
 #include "../utils/NSGDist.h"
-#include "../utils/check_range_recall.h"
 #include "../utils/beamSearch.h"
 #include "../utils/check_nn_recall.h"
+#include "../utils/check_range_recall.h"
+#include "../utils/graph.h"
 #include "../utils/parse_results.h"
 #include "../utils/stats.h"
 #include "../utils/types.h"
-#include "../utils/graph.h"
-#include "../../algorithms/vamana/index.h"
 #include "parlay/parallel.h"
 #include "parlay/primitives.h"
 #include "parlay/random.h"
 
-
-template<typename Point, typename PointRange, typename indexType>
+template <typename Point, typename PointRange, typename indexType>
 void RNG(Graph<indexType> &G, double rad, BuildParams &BP,
-         PointRange &Query_Points,
-         RangeGroundTruth<indexType> GT,
-         char* res_file, bool graph_built, PointRange &Points) {
-  parlay::internal::timer t("ANN");
-  using findex = knn_index<Point, PointRange, indexType>;
-  findex I(BP);
-  double idx_time;
-  stats<unsigned int> BuildStats(G.size());
-  if(graph_built){
-    idx_time = 0;
-  } else{
-    I.build_index(G, Points, BuildStats);
-    idx_time = t.next_time();
-  }
+         PointRange &Query_Points, RangeGroundTruth<indexType> GT,
+         char *res_file, bool graph_built, PointRange &Points) {
+    parlay::internal::timer t("ANN");
+    using findex = knn_index<Point, PointRange, indexType>;
+    findex I(BP);
+    double idx_time;
+    stats<unsigned int> BuildStats(G.size());
+    if (graph_built) {
+        idx_time = 0;
+    } else {
+        I.build_index(G, Points, BuildStats);
+        idx_time = t.next_time();
+    }
 
-  indexType start_point = I.get_start();
-  std::string name = "Vamana";
-  std::string params =
-      "R = " + std::to_string(BP.R) + ", L = " + std::to_string(BP.L);
-  auto [avg_deg, max_deg] = graph_stats_(G);
-  auto vv = BuildStats.visited_stats();
-  std::cout << "Average visited: " << vv[0] << ", Tail visited: " << vv[1]
-            << std::endl;
-  Graph_ G_(name, params, G.size(), avg_deg, max_deg, idx_time);
-  G_.print();
-  if(Query_Points.size() != 0) range_search_wrapper<Point, PointRange, indexType>(G, Points, Query_Points, GT, rad, start_point);
+    indexType start_point = I.get_start();
+    std::string name = "Vamana";
+    std::string params =
+        "R = " + std::to_string(BP.R) + ", L = " + std::to_string(BP.L);
+    auto [avg_deg, max_deg] = graph_stats_(G);
+    auto vv = BuildStats.visited_stats();
+    std::cout << "Average visited: " << vv[0] << ", Tail visited: " << vv[1]
+              << std::endl;
+    Graph_ G_(name, params, G.size(), avg_deg, max_deg, idx_time);
+    G_.print();
+    if (Query_Points.size() != 0)
+        range_search_wrapper<Point, PointRange, indexType>(
+            G, Points, Query_Points, GT, rad, start_point);
 }
-
-
-

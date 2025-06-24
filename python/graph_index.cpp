@@ -311,7 +311,6 @@ struct GraphIndex {
 
     int batch_insert(const std::vector<T *> &batch_data,
                      const std::vector<TagT> &batch_tags) {
-
         PointRange<Point> Points(batch_data);
     }
 };
