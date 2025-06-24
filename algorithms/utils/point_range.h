@@ -30,6 +30,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <vector>
 
 #include "parlay/internal/file_map.h"
 #include "parlay/parallel.h"
@@ -82,6 +83,37 @@ struct PointRange {
     template <typename PR>
     PointRange(PR& pr, int dims)
         : PointRange(pr, Point::generate_parameters(dims)) {}
+
+    PointRange(const std::vector<float*>& batch_data, int d) : params(parameters(d)) {
+        n = batch_data.size();
+        if (n == 0) {
+            values = std::shared_ptr<byte[]>(nullptr, std::free);
+            aligned_bytes = 0;
+            return;
+        }
+        int num_bytes = params.num_bytes();
+        aligned_bytes =
+            (num_bytes <= 32) ? 32 : 64 * ((num_bytes - 1) / 64 + 1);
+        long total_bytes = n * aligned_bytes;
+        void* ptr = nullptr;
+        size_t alignment = 4096;
+        if (total_bytes < alignment) alignment = 4096;
+        int res = posix_memalign(&ptr, alignment, total_bytes);
+        if (res != 0 || ptr == nullptr) {
+            fprintf(stderr,
+                    "posix_memalign failed! res=%d, total_bytes=%ld, "
+                    "alignment=%ld\n",
+                    res, total_bytes, alignment);
+            abort();
+        }
+        values =
+            std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr), std::free);
+        byte* vptr = values.get();
+        for (long i = 0; i < n; i++) {
+            Point::translate_point(vptr + i * aligned_bytes, batch_data[i],
+                                 params);
+        }
+    }
 
     PointRange(char* filename)
         : values(std::shared_ptr<byte[]>(nullptr, std::free)) {
