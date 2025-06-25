@@ -88,9 +88,6 @@ class HNSW {
     template <typename Iter>
     void batch_insert(Iter begin, Iter end, uint32_t start_id = 0);
 
-    // 新增：直接插入一批float向量
-    void batch_insert(const float* batch_data, int d, size_t n, uint32_t start_id = 0);
-
    public:
     typedef uint32_t type_index;
 
@@ -1000,7 +997,6 @@ template <typename Iter>
 void HNSW<U, Allocator>::batch_insert(Iter begin, Iter end, uint32_t start_id) {
     const auto size_batch = std::distance(begin, end);
     if (size_batch == 0) return;
-
     insert(begin, end, false);
     n += size_batch;
 }
