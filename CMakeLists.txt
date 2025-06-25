@@ -18,7 +18,7 @@ FetchContent_Declare(parlaylib
 FetchContent_GetProperties(parlaylib)
 if(NOT parlaylib_POPULATED)
   FetchContent_Populate(parlaylib)  
-  add_subdirectory(${parlaylib_SOURCE_DIR} EXCLUDE_FROM_ALL)
+  add_subdirectory(${parlaylib_SOURCE_DIR} ${CMAKE_BINARY_DIR}/parlaylib-build EXCLUDE_FROM_ALL)
 endif()
 
 # Set module path

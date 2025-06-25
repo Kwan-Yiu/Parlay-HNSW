@@ -742,7 +742,7 @@ HNSW<U, Allocator>::HNSW(Iter begin, Iter end, uint32_t dim_, float m_l_,
     };
     entrance.push_back(entrance_init);
 
-    uint32_t batch_begin = 0, batch_end = 1, size_limit = n * 0.0002,
+    uint32_t batch_begin = 0, batch_end = 1, size_limit = n * 0.02,
              batch_size = 0;
     float progress = 0.0;
     while (batch_end < n) {
