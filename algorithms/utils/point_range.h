@@ -30,8 +30,8 @@
 
 #include <algorithm>
 #include <iostream>
-#include <vector>
 #include <type_traits>
+#include <vector>
 
 #include "parlay/internal/file_map.h"
 #include "parlay/parallel.h"
@@ -40,14 +40,15 @@
 
 namespace parlayANN {
 
-template<typename Point, typename = void>
+template <typename Point, typename = void>
 struct PointParameters {
     using type = typename Point::parameters;
 };
 
-template<typename Point>
-struct PointParameters<Point, std::enable_if_t<std::is_fundamental<Point>::value>> {
-    using type = void; 
+template <typename Point>
+struct PointParameters<Point,
+                       std::enable_if_t<std::is_fundamental<Point>::value>> {
+    using type = void;
 };
 
 template <class Point_>
@@ -103,7 +104,8 @@ struct PointRange {
             return;
         }
         int num_bytes = params.num_bytes();
-        aligned_bytes = (num_bytes <= 32) ? 32 : 64 * ((num_bytes - 1) / 64 + 1);
+        aligned_bytes =
+            (num_bytes <= 32) ? 32 : 64 * ((num_bytes - 1) / 64 + 1);
         long total_bytes = n * aligned_bytes;
         void* ptr = nullptr;
         size_t alignment = 4096;
@@ -116,10 +118,12 @@ struct PointRange {
                     res, total_bytes, alignment);
             abort();
         }
-        values = std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr), std::free);
+        values =
+            std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr), std::free);
         byte* vptr = values.get();
         for (long i = 0; i < n; i++) {
-            Point::translate_point(vptr + i * aligned_bytes, batch_data + i * d, params);
+            Point::translate_point(vptr + i * aligned_bytes, batch_data + i * d,
+                                   params);
         }
     }
 
