@@ -85,6 +85,9 @@ class HNSW {
     // to a file
     void save(const std::string &filename_model) const;
 
+    template <typename Iter>
+    void batch_insert(Iter begin, Iter end, uint32_t start_id = 0);
+
    public:
     typedef uint32_t type_index;
 
@@ -987,6 +990,28 @@ void HNSW<U, Allocator>::insert(Iter begin, Iter end, bool from_blank) {
     node_pool.insert(node_pool.end(), node_new.get(),
     node_new.get()+size_batch);
     */
+}
+
+template <typename U, template <typename> class Allocator>
+template <typename Iter>
+void HNSW<U, Allocator>::batch_insert(Iter begin, Iter end, uint32_t start_id) {
+    static_assert(
+        std::is_same_v<typename std::iterator_traits<Iter>::value_type, T>);
+    static_assert(std::is_base_of_v<
+                  std::random_access_iterator_tag,
+                  typename std::iterator_traits<Iter>::iterator_category>);
+
+    const auto size_batch = std::distance(begin, end);
+    if (size_batch == 0) return;
+
+    auto points_with_ids = parlay::tabulate(size_batch, [&](size_t i) {
+        const auto& original_point = *(begin + i);
+        return T(start_id + i, original_point.coord);
+    });
+
+    const auto old_n = n;
+    n += size_batch;
+    insert(points_with_ids.begin(), points_with_ids.end(), false);
 }
 
 template <class Conn, class G, class D, class Seq>
