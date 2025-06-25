@@ -8,3 +8,5 @@ algorithms/vamana/neighbors
 data/*
 data_tools/vec_to_bin
 python/test_hnsw
+.cache/
+build/

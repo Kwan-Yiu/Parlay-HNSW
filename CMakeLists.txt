@@ -28,6 +28,9 @@ add_library(ParlayANN INTERFACE)
 set(ParlayANN_INCLUDE_DIR "${ParlayANN_SOURCE_DIR}/algorithms")
 target_include_directories(ParlayANN INTERFACE
   $<BUILD_INTERFACE:${ParlayANN_INCLUDE_DIR}>
+  $<BUILD_INTERFACE:${parlaylib_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${ParlayANN_SOURCE_DIR}/algorithms>
+  $<BUILD_INTERFACE:${ParlayANN_SOURCE_DIR}/algorithms/bench>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 add_subdirectory(algorithms)

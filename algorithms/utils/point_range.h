@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <type_traits>
 
 #include "parlay/internal/file_map.h"
 #include "parlay/parallel.h"
@@ -39,11 +40,21 @@
 
 namespace parlayANN {
 
+template<typename Point, typename = void>
+struct PointParameters {
+    using type = typename Point::parameters;
+};
+
+template<typename Point>
+struct PointParameters<Point, std::enable_if_t<std::is_fundamental<Point>::value>> {
+    using type = void; 
+};
+
 template <class Point_>
 struct PointRange {
     // using T = T_;
     using Point = Point_;
-    using parameters = typename Point::parameters;
+    using parameters = typename PointParameters<Point>::type;
     using byte = uint8_t;
 
     long dimension() const { return params.dims; }
@@ -84,17 +95,15 @@ struct PointRange {
     PointRange(PR& pr, int dims)
         : PointRange(pr, Point::generate_parameters(dims)) {}
 
-    PointRange(const std::vector<float*>& batch_data, int d)
-        : params(parameters(d)) {
-        n = batch_data.size();
+    PointRange(const float* batch_data, size_t n, int d)
+        : params(parameters(d)), n(n) {
         if (n == 0) {
             values = std::shared_ptr<byte[]>(nullptr, std::free);
             aligned_bytes = 0;
             return;
         }
         int num_bytes = params.num_bytes();
-        aligned_bytes =
-            (num_bytes <= 32) ? 32 : 64 * ((num_bytes - 1) / 64 + 1);
+        aligned_bytes = (num_bytes <= 32) ? 32 : 64 * ((num_bytes - 1) / 64 + 1);
         long total_bytes = n * aligned_bytes;
         void* ptr = nullptr;
         size_t alignment = 4096;
@@ -107,12 +116,10 @@ struct PointRange {
                     res, total_bytes, alignment);
             abort();
         }
-        values =
-            std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr), std::free);
+        values = std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr), std::free);
         byte* vptr = values.get();
         for (long i = 0; i < n; i++) {
-            Point::translate_point(vptr + i * aligned_bytes, batch_data[i],
-                                   params);
+            Point::translate_point(vptr + i * aligned_bytes, batch_data + i * d, params);
         }
     }
 
