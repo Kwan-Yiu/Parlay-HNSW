@@ -189,31 +189,6 @@ struct GraphIndex {
         }
     }
 
-    NeighborsAndDistances batch_search(
-        py::array_t<T, py::array::c_style | py::array::forcecast> &queries,
-        // uint64_t num_queries_,
-        uint64_t knn, uint64_t beam_width, bool quant = false,
-        int64_t visit_limit = -1) {
-        QueryParams QP(knn, beam_width, 1.35, visit_limit,
-                       std::min<int>(G.max_degree(), 3 * visit_limit));
-
-        uint64_t num_queries = queries.shape(0);
-        py::array_t<unsigned int> ids({num_queries, knn});
-        py::array_t<float> dists({num_queries, knn});
-
-        parlay::parallel_for(0, num_queries, [&](size_t i) {
-            std::vector<T> v(Points.dimension());
-            for (int j = 0; j < v.size(); j++) v[j] = queries.data(i)[j];
-            Point q = Point((uint8_t *)v.data(), 0, Points.params);
-            auto frontier = search_dispatch(q, QP, quant);
-            for (int j = 0; j < knn; j++) {
-                ids.mutable_data(i)[j] = frontier[j].first;
-                dists.mutable_data(i)[j] = frontier[j].second;
-            }
-        });
-        return std::make_pair(std::move(ids), std::move(dists));
-    }
-
     py::array_t<unsigned int> single_search(py::array_t<T> &q, uint64_t knn,
                                             uint64_t beam_width, bool quant,
                                             int64_t visit_limit) {
@@ -307,10 +282,5 @@ struct GraphIndex {
         float recall =
             static_cast<double>(numCorrect) / static_cast<double>(k * n);
         std::cout << "Recall: " << std::setprecision(6) << recall << std::endl;
-    }
-
-    int batch_insert(const std::vector<T *> &batch_data,
-                     const std::vector<TagT> &batch_tags) {
-        PointRange<Point> Points(batch_data);
     }
 };
