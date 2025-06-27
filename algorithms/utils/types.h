@@ -298,15 +298,15 @@ template <typename T, typename Point>
 struct Desc_HNSW {
     using type_point = Point;
     using type_tag = T;
-    
+
     static uint32_t get_id(const Point& p) {
         return static_cast<uint32_t>(p.id());
     }
-    
+
     static float distance(const Point& p1, const Point& p2, uint32_t dim) {
         return p1.distance(p2);
     }
-    
+
     static float distance(const Point& p1, const Point& p2) {
         return p1.distance(p2);
     }

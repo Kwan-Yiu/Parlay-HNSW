@@ -129,7 +129,8 @@ struct Euclidian_Point {
 
     long id() const { return id_; }
 
-    Euclidian_Point() : values(nullptr), id_(-1), params(0), owns_memory(false) {}
+    Euclidian_Point()
+        : values(nullptr), id_(-1), params(0), owns_memory(false) {}
 
     Euclidian_Point(byte* values, long id, parameters params)
         : id_(id), params(params), owns_memory(true) {
@@ -144,7 +145,7 @@ struct Euclidian_Point {
         }
     }
 
-    Euclidian_Point(const Euclidian_Point& other) 
+    Euclidian_Point(const Euclidian_Point& other)
         : id_(other.id_), params(other.params), owns_memory(true) {
         if (other.values != nullptr && params.dims > 0) {
             values = new T[params.dims];
@@ -157,7 +158,10 @@ struct Euclidian_Point {
     }
 
     Euclidian_Point(Euclidian_Point&& other) noexcept
-        : values(other.values), id_(other.id_), params(other.params), owns_memory(other.owns_memory) {
+        : values(other.values),
+          id_(other.id_),
+          params(other.params),
+          owns_memory(other.owns_memory) {
         other.values = nullptr;
         other.id_ = -1;
         other.owns_memory = false;
@@ -168,11 +172,11 @@ struct Euclidian_Point {
             if (values != nullptr && owns_memory) {
                 delete[] values;
             }
-            
+
             id_ = other.id_;
             params = other.params;
             owns_memory = true;
-            
+
             if (other.values != nullptr && params.dims > 0) {
                 values = new T[params.dims];
                 for (int i = 0; i < params.dims; ++i) {
