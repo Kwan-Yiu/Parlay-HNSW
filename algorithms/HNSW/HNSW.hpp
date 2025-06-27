@@ -96,6 +96,10 @@ class HNSW {
         uint32_t level;
         parlay::sequence<node_id> *neighbors;
         T data;
+        
+        bool operator<(const node& other) const {
+            return level < other.level;
+        }
     };
 
     struct dist {
@@ -165,9 +169,15 @@ class HNSW {
         return neighbourhood(const_cast<node &>(u), level);
     }
 
-    node &get_node(node_id id) { return node_pool[id]; }
+    node &get_node(node_id id) {
+        assert(id < node_pool.size());
+        return node_pool[id];
+    }
 
-    const node &get_node(const node_id id) const { return node_pool[id]; }
+    const node &get_node(const node_id id) const {
+        assert(id < node_pool.size());
+        return node_pool[id];
+    }
 
     /*
             static void add_connection(parlay::sequence<node_id> &neighbors,
@@ -742,6 +752,7 @@ HNSW<U, Allocator>::HNSW(Iter begin, Iter end, uint32_t dim_, float m_l_,
     };
     entrance.push_back(entrance_init);
 
+    batch_base = 2;
     uint32_t batch_begin = 0, batch_end = 1, size_limit = n * 0.02,
              batch_size = 0;
     float progress = 0.0;
@@ -818,25 +829,43 @@ void HNSW<U, Allocator>::insert(Iter begin, Iter end, bool from_blank) {
     // auto *pool = allocator.allocate(size_batch);
     // first, query the nearest point as the starting point for each node to
     // insert
-    if (from_blank) {
-        auto offset = node_pool.size();
-        node_pool.resize(offset + size_batch);
-        parlay::parallel_for(0, size_batch, [&](uint32_t i) {
-            const T &q = *(begin + i);
-            const auto level_u = get_level_random();
-            // auto *const pu = &pool[i];		// TODO: add pointer
-            // manager
-            node_id pu = offset + i;
+    // if (from_blank) {
+    //     auto offset = node_pool.size();
+    //     node_pool.resize(offset + size_batch);
+    //     parlay::parallel_for(0, size_batch, [&](uint32_t i) {
+    //         const T &q = *(begin + i);
+    //         const auto level_u = get_level_random();
+    //         // auto *const pu = &pool[i];		// TODO: add pointer
+    //         // manager
+    //         node_id pu = offset + i;
 
-            new (&get_node(pu))
-                node{level_u, new parlay::sequence<node_id>[level_u + 1], q};
-            node_new[i] = pu;
-        });
-    } else {
-        parlay::parallel_for(0, size_batch, [&](uint32_t i) {
-            node_new[i] = node_pool.size() - size_batch + i;
-        });
-    }
+    //         new (&get_node(pu))
+    //             node{level_u, new parlay::sequence<node_id>[level_u + 1], q};
+    //         node_new[i] = pu;
+    //     });
+    // } else {
+    //     auto offset = node_pool.size();
+    //     node_pool.resize(offset + size_batch);
+    //     parlay::parallel_for(0, size_batch, [&](uint32_t i) {
+    //         node_new[i] = offset + i;
+    //     });
+    // }
+
+    auto offset = node_pool.size();
+    node_pool.resize(offset + size_batch);
+    parlay::parallel_for(0, size_batch, [&](uint32_t i) {
+        const T &q = *(begin + i);
+        const auto level_u = get_level_random();
+        node_id pu = offset + i;
+        
+        node& new_node = get_node(pu);
+        new_node.level = level_u;
+        new_node.neighbors = new parlay::sequence<node_id>[level_u + 1];
+        // 使用拷贝赋值
+        new_node.data = q;
+        
+        node_new[i] = pu;
+    });
 
     debug_output("Nodes are settled\n");
     // TODO: merge ops
@@ -969,7 +998,7 @@ void HNSW<U, Allocator>::insert(Iter begin, Iter end, bool from_blank) {
     node_id node_highest =
         *std::max_element(node_new.get(), node_new.get() + size_batch,
                           [&](const node_id u, const node_id v) {
-                              return get_node(u).level < get_node(v).level;
+                              return get_node(u) < get_node(v);
                           });
     if (get_node(node_highest).level > level_ep) {
         entrance.clear();

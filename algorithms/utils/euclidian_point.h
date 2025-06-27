@@ -129,39 +129,83 @@ struct Euclidian_Point {
 
     long id() const { return id_; }
 
-    Euclidian_Point() : values(nullptr), id_(-1), params(0) {}
+    Euclidian_Point() : values(nullptr), id_(-1), params(0), owns_memory(false) {}
 
     Euclidian_Point(byte* values, long id, parameters params)
-        : values((T*)values), id_(id), params(params) {}
+        : id_(id), params(params), owns_memory(true) {
+        if (values != nullptr && params.dims > 0) {
+            this->values = new T[params.dims];
+            // 复制数据
+            for (int i = 0; i < params.dims; ++i) {
+                this->values[i] = ((T*)values)[i];
+            }
+        } else {
+            this->values = nullptr;
+        }
+    }
 
-    // template <typename Point>
-    // Euclidian_Point(const Point& p, const parameters& params) : id_(-1),
-    // params(params) {
-    //   float slope = params.slope;
-    //   int32_t offset = params.offset;
-    //   float min_val = std::floor(offset / slope);
-    //   float max_val = std::ceil((range + offset) / slope);
-    //   values = new T[params.dims];
-    //   if (slope == 1 && offset == 0) {
-    //     for (int j = 0; j < params.dims; j++)
-    //       values[j] = (T) p[j];
-    //   } else {
-    //     for (int j = 0; j < params.dims; j++) {
-    //       auto x = p[j];
-    //       if (x < min_val || x > max_val) {
-    //         std::cout << x << " is out of range: [" << min_val << "," <<
-    //         max_val << "]" << std::endl; abort();
-    //       }
-    //       int64_t r = (int64_t) (std::round(x * slope)) - offset;
-    //       if (r < 0 || r > range) {
-    //         std::cout << "out of range: " << r << ", " << range << ", " << x
-    //         << ", " << std::round(x * slope) - offset << ", " << slope << ",
-    //         " << offset << std::endl; abort();
-    //       }
-    //       values[j] = (T) r;
-    //     }
-    //   }
-    // }
+    Euclidian_Point(const Euclidian_Point& other) 
+        : id_(other.id_), params(other.params), owns_memory(true) {
+        if (other.values != nullptr && params.dims > 0) {
+            values = new T[params.dims];
+            for (int i = 0; i < params.dims; ++i) {
+                values[i] = other.values[i];
+            }
+        } else {
+            values = nullptr;
+        }
+    }
+
+    Euclidian_Point(Euclidian_Point&& other) noexcept
+        : values(other.values), id_(other.id_), params(other.params), owns_memory(other.owns_memory) {
+        other.values = nullptr;
+        other.id_ = -1;
+        other.owns_memory = false;
+    }
+
+    Euclidian_Point& operator=(const Euclidian_Point& other) {
+        if (this != &other) {
+            if (values != nullptr && owns_memory) {
+                delete[] values;
+            }
+            
+            id_ = other.id_;
+            params = other.params;
+            owns_memory = true;
+            
+            if (other.values != nullptr && params.dims > 0) {
+                values = new T[params.dims];
+                for (int i = 0; i < params.dims; ++i) {
+                    values[i] = other.values[i];
+                }
+            } else {
+                values = nullptr;
+            }
+        }
+        return *this;
+    }
+
+    Euclidian_Point& operator=(Euclidian_Point&& other) noexcept {
+        if (this != &other) {
+            if (values != nullptr && owns_memory) {
+                delete[] values;
+            }
+            values = other.values;
+            id_ = other.id_;
+            params = other.params;
+            owns_memory = other.owns_memory;
+            other.values = nullptr;
+            other.id_ = -1;
+            other.owns_memory = false;
+        }
+        return *this;
+    }
+
+    ~Euclidian_Point() {
+        if (values != nullptr && owns_memory) {
+            delete[] values;
+        }
+    }
 
     bool operator==(const Euclidian_Point& q) const {
         for (int i = 0; i < params.dims; i++) {
@@ -240,6 +284,7 @@ struct Euclidian_Point {
    private:
     T* values;
     long id_;
+    bool owns_memory;
 };
 
 template <int jl_dims>

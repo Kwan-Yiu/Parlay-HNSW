@@ -295,17 +295,21 @@ struct RangeParams {
 };
 
 template <typename T, typename Point>
-class Desc_HNSW {
-   public:
-    typedef T type_elem;
-    typedef Point type_point;
-    static auto distance(const type_point& u, const type_point& v,
-                         uint32_t dim) {
-        (void)dim;
-        return u.distance(v);
+struct Desc_HNSW {
+    using type_point = Point;
+    using type_tag = T;
+    
+    static uint32_t get_id(const Point& p) {
+        return static_cast<uint32_t>(p.id());
     }
-
-    static auto get_id(const type_point& u) { return u.id(); }
+    
+    static float distance(const Point& p1, const Point& p2, uint32_t dim) {
+        return p1.distance(p2);
+    }
+    
+    static float distance(const Point& p1, const Point& p2) {
+        return p1.distance(p2);
+    }
 };
 
 #endif
