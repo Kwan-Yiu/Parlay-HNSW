@@ -431,16 +431,13 @@ struct knn_index {
         return 0;
     }
 
-    // 简单的封装：直接调用 incr_batch_insert
     template<typename T, typename TagT>
     int batch_insert(const T* batch_data, const TagT* batch_tags,
                      size_t num_points) {
         if (num_points == 0) return 0;
         
-        // 获取当前图的大小作为新点的起始索引
         size_t start_idx = G.size();
         
-        // 创建新点的索引序列
         parlay::sequence<indexType> new_inserts = parlay::tabulate(
             num_points, 
             [&](size_t i) { return static_cast<indexType>(start_idx + i); }
