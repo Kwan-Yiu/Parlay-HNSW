@@ -443,7 +443,6 @@ struct knn_index {
             [&](size_t i) { return static_cast<indexType>(start_idx + i); }
         );
         
-        // 直接调用 incr_batch_insert
         incr_batch_insert(new_inserts, G, Points, QPoints, BuildStats, BP.alpha);
         
         return static_cast<int>(num_points);
