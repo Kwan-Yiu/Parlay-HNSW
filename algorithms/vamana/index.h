@@ -337,8 +337,8 @@ struct knn_index {
     }
 
     int incr_batch_insert(parlay::sequence<indexType> &new_inserts, GraphI &G,
-                           PR &Points, QPR &QPoints,
-                           stats<indexType> &BuildStats, double alpha = 1.0) {
+                          PR &Points, QPR &QPoints,
+                          stats<indexType> &BuildStats, double alpha = 1.0) {
         for (int p : new_inserts) {
             if (p < 0 || p >= (int)Points.size()) {
                 std::cout << "ERROR: invalid point " << p

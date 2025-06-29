@@ -137,7 +137,7 @@ struct PointRange {
         int num_bytes = params.num_bytes();
         aligned_bytes =
             (num_bytes <= 32) ? 32 : 64 * ((num_bytes - 1) / 64 + 1);
-        long total_bytes = max_elements * aligned_bytes;  
+        long total_bytes = max_elements * aligned_bytes;
         void* ptr = nullptr;
         size_t alignment = 4096;
         if (total_bytes < alignment) alignment = 4096;
@@ -231,14 +231,14 @@ struct PointRange {
 
     void extend(const float* new_data, size_t new_n) {
         if (new_n == 0) return;
-        
+
         size_t old_n = n;
         size_t total_n = old_n + new_n;
-        
+
         if (total_n > capacity_) {
             int num_bytes = params.num_bytes();
             long new_total_bytes = total_n * aligned_bytes;
-            
+
             void* ptr = nullptr;
             size_t alignment = 4096;
             if (new_total_bytes < alignment) alignment = 4096;
@@ -250,27 +250,28 @@ struct PointRange {
                         res, new_total_bytes, alignment);
                 abort();
             }
-            
+
             if (old_n > 0) {
                 std::memcpy(ptr, values.get(), old_n * aligned_bytes);
             }
-            
+
             byte* vptr = reinterpret_cast<byte*>(ptr);
             for (long i = 0; i < new_n; i++) {
-                Point::translate_point(vptr + (old_n + i) * aligned_bytes, 
+                Point::translate_point(vptr + (old_n + i) * aligned_bytes,
                                        new_data + i * params.dims, params);
             }
-            
-            values = std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr), std::free);
+
+            values = std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr),
+                                             std::free);
             capacity_ = total_n;
         } else {
             byte* vptr = values.get();
             for (long i = 0; i < new_n; i++) {
-                Point::translate_point(vptr + (old_n + i) * aligned_bytes, 
+                Point::translate_point(vptr + (old_n + i) * aligned_bytes,
                                        new_data + i * params.dims, params);
             }
         }
-        
+
         n = total_n;
     }
 
