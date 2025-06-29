@@ -335,6 +335,122 @@ struct knn_index {
         t_bidirect.total();
         t_prune.total();
     }
+
+    void incr_batch_insert(parlay::sequence<indexType> &new_inserts, GraphI &G,
+                           PR &Points, QPR &QPoints, stats<indexType> &BuildStats,
+                           double alpha = 1.0) {
+        for (int p : new_inserts) {
+            if (p < 0 || p >= (int)Points.size()) {
+                std::cout << "ERROR: invalid point " << p 
+                          << " given to incremental_insert (Points.size() = " << Points.size() << ")" << std::endl;
+                abort();
+            }
+        }
+
+        size_t m = new_inserts.size();
+        
+        size_t old_size = G.size();
+        size_t new_size = Points.size();
+        if (new_size > old_size) {
+            G.resize(new_size);
+            std::cout << "Expanded graph from " << old_size << " to " << new_size << " nodes" << std::endl;
+        }
+
+        parlay::sequence<int> rperm = parlay::random_permutation<int>(static_cast<int>(m));
+        auto shuffled_inserts = parlay::tabulate(m, [&](size_t i) { 
+            return new_inserts[rperm[i]]; 
+        });
+
+        parlay::internal::timer t_beam("incremental beam search time");
+        parlay::internal::timer t_bidirect("incremental bidirect time");
+        parlay::internal::timer t_prune("incremental prune time");
+        
+        t_beam.start();
+        t_bidirect.start();
+        t_prune.start();
+
+        parlay::sequence<parlay::sequence<indexType>> new_out_(m);
+        
+        parlay::parallel_for(0, m, [&](size_t i) {
+            size_t index = shuffled_inserts[i];
+            int sp = start_point;  
+            
+            QueryParams QP((long)0, BP.L, (double)0.0, (long)Points.size(),
+                           (long)G.max_degree());
+            
+            auto [visited, bs_distance_comps] =
+                beam_search_rerank__<Point, QPoint, PR, QPR, indexType>(
+                    Points[index], QPoints[index], G, Points, QPoints, sp, QP);
+            
+            BuildStats.increment_dist(index, bs_distance_comps);
+            BuildStats.increment_visited(index, visited.size());
+
+            long rp_distance_comps;
+            std::tie(new_out_[i], rp_distance_comps) =
+                robustPrune(index, visited, G, Points, alpha);
+            BuildStats.increment_dist(index, rp_distance_comps);
+        });
+
+        t_beam.stop();
+
+        parlay::parallel_for(0, m, [&](size_t i) {
+            G[shuffled_inserts[i]].update_neighbors(new_out_[i]);
+        });
+
+        t_bidirect.start();
+        auto flattened = parlay::delayed::flatten(
+            parlay::tabulate(m, [&](size_t i) {
+                indexType index = shuffled_inserts[i];
+                return parlay::delayed::map(
+                    new_out_[i],
+                    [=](indexType ngh) { return std::pair(ngh, index); });
+            }));
+        auto grouped_by = parlay::group_by_key(parlay::delayed::to_sequence(flattened));
+        t_bidirect.stop();
+
+        t_prune.start();
+        parlay::parallel_for(0, grouped_by.size(), [&](size_t j) {
+            auto &[index, candidates] = grouped_by[j];
+            size_t newsize = candidates.size() + G[index].size();
+            if (newsize <= BP.R) {
+                add_neighbors_without_repeats(G[index], candidates);
+                G[index].update_neighbors(candidates);
+            } else {
+                auto [new_out_2_, distance_comps] = robustPrune(
+                    index, std::move(candidates), G, Points, alpha);
+                G[index].update_neighbors(new_out_2_);
+                BuildStats.increment_dist(index, distance_comps);
+            }
+        });
+        t_prune.stop();
+        
+        t_beam.total();
+        t_bidirect.total();
+        t_prune.total();
+
+        return 0;
+    }
+
+    // 简单的封装：直接调用 incr_batch_insert
+    template<typename T, typename TagT>
+    int batch_insert(const T* batch_data, const TagT* batch_tags,
+                     size_t num_points) {
+        if (num_points == 0) return 0;
+        
+        // 获取当前图的大小作为新点的起始索引
+        size_t start_idx = G.size();
+        
+        // 创建新点的索引序列
+        parlay::sequence<indexType> new_inserts = parlay::tabulate(
+            num_points, 
+            [&](size_t i) { return static_cast<indexType>(start_idx + i); }
+        );
+        
+        // 直接调用 incr_batch_insert
+        incr_batch_insert(new_inserts, G, Points, QPoints, BuildStats, BP.alpha);
+        
+        return static_cast<int>(num_points);
+    }
 };
 
 }  // namespace parlayANN

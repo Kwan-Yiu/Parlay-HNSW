@@ -14,6 +14,8 @@ int main() {
     float m_l = 1.15f;
     float alpha = 1.15f;
 
+    setenv("PARLAY_NUM_THREADS", std::to_string(48).c_str(), 1);
+
     auto build_start = std::chrono::high_resolution_clock::now();
     build_hnsw_index<float, Euclidian_Point<float>>(
         metric, data_path, output_path, graph_degree, efc, m_l, alpha);
