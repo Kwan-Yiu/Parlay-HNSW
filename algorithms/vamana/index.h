@@ -336,7 +336,7 @@ struct knn_index {
         t_prune.total();
     }
 
-    void incr_batch_insert(parlay::sequence<indexType> &new_inserts, GraphI &G,
+    int incr_batch_insert(parlay::sequence<indexType> &new_inserts, GraphI &G,
                            PR &Points, QPR &QPoints,
                            stats<indexType> &BuildStats, double alpha = 1.0) {
         for (int p : new_inserts) {
@@ -353,7 +353,6 @@ struct knn_index {
         size_t old_size = G.size();
         size_t new_size = Points.size();
         if (new_size > old_size) {
-            G.resize(new_size);
             std::cout << "Expanded graph from " << old_size << " to "
                       << new_size << " nodes" << std::endl;
         }
@@ -432,23 +431,6 @@ struct knn_index {
         t_prune.total();
 
         return 0;
-    }
-
-    template <typename T, typename TagT>
-    int batch_insert(const T *batch_data, const TagT *batch_tags,
-                     size_t num_points) {
-        if (num_points == 0) return 0;
-
-        size_t start_idx = G.size();
-
-        parlay::sequence<indexType> new_inserts = parlay::tabulate(
-            num_points,
-            [&](size_t i) { return static_cast<indexType>(start_idx + i); });
-
-        incr_batch_insert(new_inserts, G, Points, QPoints, BuildStats,
-                          BP.alpha);
-
-        return static_cast<int>(num_points);
     }
 };
 

@@ -97,7 +97,7 @@ struct PointRange {
         : PointRange(pr, Point::generate_parameters(dims)) {}
 
     PointRange(const float* batch_data, size_t n, int d)
-        : params(parameters(d)), n(n) {
+        : params(parameters(d)), n(n), capacity_(n) {
         if (n == 0) {
             values = std::shared_ptr<byte[]>(nullptr, std::free);
             aligned_bytes = 0;
@@ -107,6 +107,37 @@ struct PointRange {
         aligned_bytes =
             (num_bytes <= 32) ? 32 : 64 * ((num_bytes - 1) / 64 + 1);
         long total_bytes = n * aligned_bytes;
+        void* ptr = nullptr;
+        size_t alignment = 4096;
+        if (total_bytes < alignment) alignment = 4096;
+        int res = posix_memalign(&ptr, alignment, total_bytes);
+        if (res != 0 || ptr == nullptr) {
+            fprintf(stderr,
+                    "posix_memalign failed! res=%d, total_bytes=%ld, "
+                    "alignment=%ld\n",
+                    res, total_bytes, alignment);
+            abort();
+        }
+        values =
+            std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr), std::free);
+        byte* vptr = values.get();
+        for (long i = 0; i < n; i++) {
+            Point::translate_point(vptr + i * aligned_bytes, batch_data + i * d,
+                                   params);
+        }
+    }
+
+    PointRange(const float* batch_data, size_t n, int d, size_t max_elements)
+        : params(parameters(d)), n(n), capacity_(max_elements) {
+        if (max_elements == 0) {
+            values = std::shared_ptr<byte[]>(nullptr, std::free);
+            aligned_bytes = 0;
+            return;
+        }
+        int num_bytes = params.num_bytes();
+        aligned_bytes =
+            (num_bytes <= 32) ? 32 : 64 * ((num_bytes - 1) / 64 + 1);
+        long total_bytes = max_elements * aligned_bytes;  
         void* ptr = nullptr;
         size_t alignment = 4096;
         if (total_bytes < alignment) alignment = 4096;
@@ -198,12 +229,58 @@ struct PointRange {
 
     byte* location(long i) const { return values.get() + i * aligned_bytes; }
 
+    void extend(const float* new_data, size_t new_n) {
+        if (new_n == 0) return;
+        
+        size_t old_n = n;
+        size_t total_n = old_n + new_n;
+        
+        if (total_n > capacity_) {
+            int num_bytes = params.num_bytes();
+            long new_total_bytes = total_n * aligned_bytes;
+            
+            void* ptr = nullptr;
+            size_t alignment = 4096;
+            if (new_total_bytes < alignment) alignment = 4096;
+            int res = posix_memalign(&ptr, alignment, new_total_bytes);
+            if (res != 0 || ptr == nullptr) {
+                fprintf(stderr,
+                        "posix_memalign failed! res=%d, new_total_bytes=%ld, "
+                        "alignment=%ld\n",
+                        res, new_total_bytes, alignment);
+                abort();
+            }
+            
+            if (old_n > 0) {
+                std::memcpy(ptr, values.get(), old_n * aligned_bytes);
+            }
+            
+            byte* vptr = reinterpret_cast<byte*>(ptr);
+            for (long i = 0; i < new_n; i++) {
+                Point::translate_point(vptr + (old_n + i) * aligned_bytes, 
+                                       new_data + i * params.dims, params);
+            }
+            
+            values = std::shared_ptr<byte[]>(reinterpret_cast<byte*>(ptr), std::free);
+            capacity_ = total_n;
+        } else {
+            byte* vptr = values.get();
+            for (long i = 0; i < new_n; i++) {
+                Point::translate_point(vptr + (old_n + i) * aligned_bytes, 
+                                       new_data + i * params.dims, params);
+            }
+        }
+        
+        n = total_n;
+    }
+
     parameters params;
 
    private:
     std::shared_ptr<byte[]> values;
     long aligned_bytes;
     size_t n;
+    size_t capacity_;
 };
 
 }  // namespace parlayANN
