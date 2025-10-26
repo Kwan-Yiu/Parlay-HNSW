@@ -4,22 +4,30 @@ project(ParlayANN VERSION 1
         LANGUAGES CXX)
 
 include(CheckCXXCompilerFlag)
-include (FetchContent)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-FetchContent_Declare(parlaylib
-  GIT_REPOSITORY  https://github.com/cmuparlay/parlaylib.git
-  GIT_TAG         master
-)
-FetchContent_GetProperties(parlaylib)
-if(NOT parlaylib_POPULATED)
-  FetchContent_Populate(parlaylib)  
-  add_subdirectory(${parlaylib_SOURCE_DIR} ${CMAKE_BINARY_DIR}/parlaylib-build EXCLUDE_FROM_ALL)
+set(parlaylib_BINARY_DIR "${CMAKE_BINARY_DIR}/parlaylib-build")
+set(parlaylib_bundled_dir "${ParlayANN_SOURCE_DIR}/parlaylib")
+
+if(EXISTS "${parlaylib_bundled_dir}/CMakeLists.txt")
+  set(parlaylib_SOURCE_DIR "${parlaylib_bundled_dir}")
+else()
+  include(FetchContent)
+  FetchContent_Declare(parlaylib
+    GIT_REPOSITORY  https://github.com/cmuparlay/parlaylib.git
+    GIT_TAG         master
+  )
+  FetchContent_GetProperties(parlaylib)
+  if(NOT parlaylib_POPULATED)
+    FetchContent_Populate(parlaylib)
+  endif()
 endif()
+
+add_subdirectory(${parlaylib_SOURCE_DIR} ${parlaylib_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 # Set module path
 list(APPEND CMAKE_MODULE_PATH "${ParlayANN_SOURCE_DIR}/cmake")
@@ -36,5 +44,4 @@ target_include_directories(ParlayANN INTERFACE
 add_subdirectory(algorithms)
 #add_subdirectory(data_tools)
 #add_subdirectory(range_search)
-
 
