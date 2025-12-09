@@ -73,8 +73,7 @@ inline float euclidian_distance(const uint16_t* p, const uint16_t* q,
     return (float)(result >> 8);
 }
 
-inline float euclidian_distance(const int8_t* p, const int8_t* q,
-                                unsigned d) {
+inline float euclidian_distance(const int8_t* p, const int8_t* q, unsigned d) {
     int result = 0;
     for (int i = 0; i < d; i++) {
         result += ((int32_t)((int16_t)q[i] - (int16_t)p[i])) *
